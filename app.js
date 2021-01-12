@@ -2,9 +2,14 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
-const encrypt = require("mongoose-encryption");
+const md5 = require("md5");
+require('dotenv').config();
 
 const app = express();
+
+console.log(process.env.API_KEY);
+console.log("weak password hash: " + md5("123456"));
+console.log("strong password hash: " + md5("sjkhdfsd8f7jhsd$%$sdfsdfHJKHSJFHDSF78324"));
 
 app.use(express.static("public"));
 app.set('view engine', 'ejs');
@@ -16,13 +21,13 @@ mongoose.connect("mongodb://localhost:27017/userDB", { useNewUrlParser: true });
 
 const userSchema = new mongoose.Schema({
   email: String,
-  password: String
+  password: md5(req.body.password)
 });
 
 const User = new mongoose.model("User", userSchema);
 
 const secret = "Thisisourlittlesecret.";
-userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
+userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedFields: ["password"] });
 
 app.get("/", function (req, res) {
   res.render("home");
@@ -52,7 +57,7 @@ app.post("/register", function (req, res) {
 
 app.post("/login", function (req, res) {
   const username = req.body.username;
-  const password = req.body.password;
+  const password = md5(req.body.password);
 
   User.findOne({ email: username }, function (err, foundUser) {
     if (err) {
